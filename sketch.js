@@ -1,6 +1,6 @@
-var pilot, ducks, b, pImg, dImg, bg, play, r, y, g;
+var pilot, ducks, b, pImg, dImg, bg, play, game, quack, l, reset, over, r;
 var yImg, gImg;
-var health = 1;
+var health = 10;
 var score = 0;
 var HighScore;
 var gameState = 0;
@@ -10,67 +10,48 @@ function preload(){
   pImg = loadImage("img/pilot1.5.png");
   dImg = loadImage("img/duck.png");
   bg = loadImage("img/sky.jpg");
+  quack = loadSound("duckdying.wav");
+  over = loadSound("over.wav")
+  r = loadImage("img/reset.png")
 }
 
 function setup() {
   createCanvas(displayWidth,displayHeight);
   pilot = createSprite(displayWidth/2, 400, 50, 50);
   pilot.addImage("air", pImg);
-  w=random(10,1000)
-  play = createButton("Play")
+  w=random(10,1000);
+  l = createSprite(displayWidth/2, displayHeight/4, displayWidth, displayHeight);
+  l.addImage("landscape", bg)
+  l.scale = 2.5;
+  reset = createSprite(1250,100,10,10);
+  reset.addImage("restart", r);
+  reset.scale = 0.4;
   b = new Group();
+  game = new Game();
+  database = firebase.database();
+  game.getHighScore();
 }
 
 function draw() {
   background(bg);
+  infinity();
+  pilot.debug = false;
+  pilot.setCollider("rectangle", 0,0,160,140)
+  if(score>HighScore){
+    HighScore = score;
+    game.update();
+  }
+  l.depth = pilot.depth;
+  pilot.depth=pilot.depth+1;
+  reset.depth = pilot.depth;
+  drawSprites();
   textFont('Times New Roman')
   textSize(20);
   fill("red");
   text("Plane Integrity: "+health,100,100);
   text("Score: "+score, 100,150);
-  text("High Score"+HighScore, 100, 200);
-  pilot.debug = false;
-  pilot.setCollider("rectangle", 0,0,160,140)
-
-  if(gameState === 0){ 
-    text("Press Space to Play", displayWidth/2-80, 300)
-    if(keyDown("SPACE")){
-      gameState = 1;
-    }
-  }
-
-  if(gameState === 1){
-  score = score+ Math.round(frameCount/150);
- 
-  if(pilot.isTouching(b)){
-   health=health-1;
-   b[0].destroy();
-  }
-  if(health<1){
-    gameState = 2;
-  }
-  if(score>HighScore){
-    HighScore = score;
-    update();
-  }
-
-  WATERFOWL();
-  movement();
-  } 
-
-  if(gameState === 2){
-    pilot.velocityX = 0;
-    pilot.velocityY = 0;
-    b.destroyEach();
-    textSize(20)
-    fill("black");
-    text("Your Plane Has Crashed Due To Too Much Damage", displayWidth/2-150, displayHeight/2-50)
-    textSize(20)
-    fill(249, 49, 36)
-    text("Game Over", displayWidth/2-10, displayHeight/2)
-  }
-  
-  drawSprites();
+  text("High Score:"+HighScore, 100, 200);
+  game.display();
 }
 
 function movement(){
@@ -116,8 +97,10 @@ function WATERFOWL() {
   }
 }
 
-update(){
-  database.ref('/').update({
-    HighScore: HighScore
-  });
+function infinity(){
+  l.velocityY = 4
+  if(l.y>displayHeight-400){
+    l.y = displayHeight/4
+  }
 }
+
